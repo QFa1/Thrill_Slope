@@ -2,6 +2,7 @@ import pygame.freetype
 import random
 import os
 
+
 pygame.init()
 size = width, height = 700, 700
 clock = pygame.time.Clock()
@@ -180,18 +181,13 @@ class ButtonPause2(pygame.sprite.Sprite):  # Создание кнопок в п
             else:
                 self.image = self.btn_down
         elif self.is_hovered:
+            self.image = self.hover_image
             if not music_play:
-                self.image = self.hover_image
                 sound_pause_btn.image = load_image('Buttons/notsoundbtn2.png')
-            else:
-                self.image = self.hover_image
         else:
+            self.image = load_image(self.image_path)
             if not music_play:
-                self.image = load_image(self.image_path)
                 sound_pause_btn.image = load_image('Buttons/notsoundbtn1.png')
-            else:
-                self.image = load_image(self.image_path)
-                self.image = pygame.transform.scale(self.image, (self.width, self.height))
         if not pause:
             if self.settings1_button_time >= 0:
                 self.settings1_button_time -= 0.1
@@ -821,7 +817,7 @@ class Clocks(pygame.sprite.Sprite):  # Объект часы которые за
             self.kill()
 
 
-class Text(pygame.sprite.Sprite):
+class Text(pygame.sprite.Sprite):  # Вывод текста с результатами при поражении
     def __init__(self, text, pos, antialias, color, size1, font='data/font.ttf'):
         super().__init__(loading_sprite, all_sprites)
         self.font = pygame.font.Font(font, size1)
@@ -833,7 +829,7 @@ class Text(pygame.sprite.Sprite):
         self.kill()
 
 
-class Text2(pygame.sprite.Sprite):
+class Text2(pygame.sprite.Sprite):  # Написание текста в настройках
     def __init__(self, text, pos, antialias, color, size1, font='data/font.ttf'):
         super().__init__(loading_sprite, all_sprites)
         self.font = pygame.font.Font(font, size1)
@@ -942,7 +938,7 @@ if __name__ == '__main__':
     raise_clock, spawn_clock, time_passed = False, 0, 0  # Объект часы
     defeat_music_play, clock_sound, clock_time = 0, False, 0  # Музыка
     # Музыка
-    music_play, music_play2, music_play3, music_play4 = True, 0, 0, 0
+    music_play, music_play2, music_play3, music_play4, defeat_notmusic_play, notmusicdefeat = True, 0, 0, 0, False, 0
     bg_music = pygame.mixer.Sound('data/Music/bgMusic.mp3')
     defeat_music = pygame.mixer.Sound('data/Music/defeatMusic.mp3')
     clockSound = pygame.mixer.Sound('data/Music/clockSound.mp3')
@@ -1024,7 +1020,6 @@ if __name__ == '__main__':
                 else:
                     music_play = True
                     music_play3 = 0
-
             if event.type == pygame.USEREVENT and event.button == settings2_button:
                 main_settings_open = True
             if event.type == pygame.USEREVENT and event.button == exit_settings_btn:
@@ -1051,9 +1046,10 @@ if __name__ == '__main__':
                 small_exit_btn.handle_event(event)
 
         if music_play:  # Проигрывание фоновой музыки
-            if music_play2 == 0:
-                music_play2 += 1
-                bg_music.play(-1)
+            if not defeat_notmusic_play:
+                if music_play2 == 0:
+                    music_play2 += 1
+                    bg_music.play(-1)
         else:
             bg_music.stop()
             music_play2 = 0
@@ -1098,11 +1094,12 @@ if __name__ == '__main__':
             clock_time = 0
 
         if defeat:  # Поражение
+            notmusicdefeat = 0
             clockSound.stop()
             if defeat_music_play == 0:
                 bg_music.stop()
                 defeat_music.play()
-                defeat_music_play, music_play = 1, False
+                defeat_music_play, defeat_notmusic_play = 1, True
 
             start_again_button.check_hover(pygame.mouse.get_pos())
             sound_defeat_btn.check_hover(pygame.mouse.get_pos())
@@ -1166,7 +1163,15 @@ if __name__ == '__main__':
                 background_speed = 3
             if 3 <= background_time:
                 if scores >= 100:
+                    quantity_stone += 0.1
+                    quantity_tree += 0.1
                     background_speed = 12
+                    if quantity_tree > 1:
+                        tree = Tree(player_x, player_y)
+                        quantity_tree = 0
+                    if quantity_stone > 3:
+                        stone = Stones(player_x, player_y)
+                        quantity_stone = 0
                 else:
                     # Количество объектов на карте(елки, камни ...)
                     quantity_stone += 0.1
@@ -1183,7 +1188,10 @@ if __name__ == '__main__':
         if new_game:
             defeat, defeat_background_time, k, raise_clock, time_passed = False, 0, 0, False, 0
             scores, new_gifts, new_clocks = 0, 0, 0
-            defeat_music_play = 0
+            defeat_music_play, defeat_notmusic_play = 0, False
+            if notmusicdefeat == 0:
+                music_play2 = 0
+                notmusicdefeat += 1
             if new_game2:
                 Background()
                 start_button.check_hover(pygame.mouse.get_pos())
